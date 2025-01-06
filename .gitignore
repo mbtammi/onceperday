@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-node_modules
-=======
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
@@ -56,4 +53,3 @@ flutter/
 miro-portfolio/
 my_app/
 onceperday/
->>>>>>> 00a84eb (add)
