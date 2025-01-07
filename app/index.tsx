@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Font from 'expo-font'; // Import expo-font for loading fonts
 import styles from './styles'; // Import your styles from external file
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 type Habit = {
   id: number;
@@ -13,8 +22,9 @@ type Habit = {
 const Index = () => {
   const [habit, setHabit] = useState<string>(''); // habit input state
   const [habits, setHabits] = useState<Habit[]>([]); // habit list state
-  const [clickedHabit, setClickedHabit] = useState<number | null>(null); // state to track clicked habit
   const [fontsLoaded, setFontsLoaded] = useState(false); // State for font loading
+  const [clickedHabits, setClickedHabits] = useState<number[]>([]); // Track multiple clicked habits
+
 
   // Load custom fonts
   useEffect(() => {
@@ -29,6 +39,24 @@ const Index = () => {
     };
 
     loadFonts();
+  }, []);
+
+  useEffect(() => {
+    // Function to reset clicked habits at midnight
+    const resetHabitsAtMidnight = () => {
+      const interval = setInterval(() => {
+        const currentTime = new Date();
+        if (currentTime.getHours() === 0 && currentTime.getMinutes() === 0) {
+          // Reset clicked habits when it's midnight
+          setClickedHabits([]);
+        }
+      }, 60000); // Check every minute
+  
+      // Clean up the interval on component unmount
+      return () => clearInterval(interval);
+    };
+  
+    resetHabitsAtMidnight(); // Start the midnight check
   }, []);
 
   // Load habits from AsyncStorage when the app starts
@@ -58,6 +86,36 @@ const Index = () => {
     saveHabits();
   }, [habits]);
 
+  // Request permissions for notifications and schedule daily notifications
+  useEffect(() => {
+    const setupNotifications = async () => {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissions not granted', 'Notification permissions are required to remind you daily.');
+        return;
+      }
+
+      // Cancel any existing notifications to avoid duplicates
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      // Schedule a daily notification at 8 PM
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '✅ Remember to check your daily habits!',
+          body: 'Go open the app!',
+          sound: false,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: 20, // 8 PM
+          minute: 0,
+        },
+      });
+    };
+
+    setupNotifications();
+  }, []);
+
   // Add a habit
   const addHabit = () => {
     if (habit.trim()) {
@@ -73,11 +131,15 @@ const Index = () => {
 
   // Handle habit click (for overlay and overline effect)
   const handleHabitClick = (id: number) => {
-    if (clickedHabit === id) {
-      setClickedHabit(null); // If clicked again, remove the effect
-    } else {
-      setClickedHabit(id); // Apply the effect to clicked habit
-    }
+    setClickedHabits((prevClickedHabits) => {
+      // If the habit is already clicked, remove it from the array
+      if (prevClickedHabits.includes(id)) {
+        return prevClickedHabits.filter((habitId) => habitId !== id);
+      } else {
+        // Otherwise, add it to the array
+        return [...prevClickedHabits, id];
+      }
+    });
   };
 
   // Handle long press on habit to ask for confirmation before deletion
@@ -114,7 +176,7 @@ const Index = () => {
     <View style={styles.container}>
       <Text style={[styles.title, { fontFamily: 'SpaceMono-Bold' }]}>Once a Day</Text>
       <Text style={{ fontFamily: 'SpaceMono-Regular', paddingBottom: 25 }}>
-        More features coming! For suggestions contact mirotammi44@gmail.com
+        This is the simplest habit tracker. More features coming in the future! For suggestions contact mirotammi44@gmail.com
       </Text>
 
       {/* Text input for new habit and add button */}
@@ -132,30 +194,34 @@ const Index = () => {
 
       {/* FlatList to display habits */}
       <FlatList
-        data={habits}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => handleHabitClick(item.id)} // Handle click on habit
-            onLongPress={() => handleLongPress(item.id)} // Handle long press to delete
-            style={[
-              styles.habitContainer,
-              clickedHabit === item.id && styles.clickedHabit, // Apply styles for clicked habit
-            ]}
-          >
-            {/* Habit text */}
-            <Text
-              style={[
-                styles.habitText,
-                { fontFamily: clickedHabit === item.id ? 'SpaceMono-Italic' : 'SpaceMono-Regular' },
-                clickedHabit === item.id && styles.overlinedText,
-              ]}
-            >
-              {item.text}
-            </Text>
-          </TouchableOpacity>
-        )}
-        keyExtractor={(item) => item.id.toString()}
-      />
+  data={habits}
+  renderItem={({ item }) => (
+    <TouchableOpacity
+      onPress={() => handleHabitClick(item.id)} // Handle click on habit
+      onLongPress={() => handleLongPress(item.id)} // Handle long press to delete
+      style={[
+        styles.habitContainer,
+        clickedHabits.includes(item.id) && styles.clickedHabit, // Apply styles for clicked habit
+      ]}
+    >
+      {/* Habit text */}
+      <Text
+        style={[
+          styles.habitText,
+          {
+            fontFamily: clickedHabits.includes(item.id)
+              ? 'SpaceMono-Italic'
+              : 'SpaceMono-Regular',
+          },
+          clickedHabits.includes(item.id) && styles.overlinedText,
+        ]}
+      >
+        {item.text}
+      </Text>
+    </TouchableOpacity>
+  )}
+  keyExtractor={(item) => item.id.toString()}
+/>
     </View>
   );
 };

@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     fontFamily: "SpaceMono-Regular",
   },
   addButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#FFD60A',
     padding: 9,
     borderRadius: 4,
     alignItems: 'center',  // Aligns children horizontally
