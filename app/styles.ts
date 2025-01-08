@@ -7,6 +7,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f4f4f4',
   },
   title: {
+    paddingTop: 24,
     fontSize: 24,
     marginBottom: 16,
     textAlign: 'center',
