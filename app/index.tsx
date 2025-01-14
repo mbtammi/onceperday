@@ -118,6 +118,7 @@ const Index = () => {
           title: '✅ Remember to check your daily habits!',
           body: 'Go open the app!',
           sound: false,
+          subtitle: 'Once a Day',
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -198,7 +199,7 @@ const Index = () => {
       <StatusBar style="dark" hidden />
       <Text style={[styles.title, { fontFamily: 'SpaceMono-Bold' }]}>Once a Day</Text>
       <Text style={{ fontFamily: 'SpaceMono-Regular', paddingBottom: 25 }}>
-        This is the simplest habit tracker. Tap to complete Habit and Hold to detele. More features coming in the future! For suggestions contact mirotammi44@gmail.com
+        This is the simplest habit tracker. Tap to complete Habit and Hold to delete. More features coming in the future! For suggestions contact mirotammi44@gmail.com
       </Text>
 
       {/* Text input for new habit and add button */}
